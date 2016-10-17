@@ -273,7 +273,7 @@ test1 = all (\w -> accept1 m1 w == accept1 fsm1 w) strings
 --Exercise 2: ( ( (aa)* + (aba)* + (baa)* + (baba*) + (abab)* ) b* )*
 --Exercise 2: b*(ab*ab*)*
 ex2 = toRE "b*ab*.ab*..*."
-m2 = re2fsm ex2
+m2  = re2fsm ex2
 fsm2 = FSM {
   states = [0..2],
   start  = 0,
@@ -284,7 +284,20 @@ fsm2 = FSM {
   }
 test2 = all (\w -> accept1 m2 w == accept1 fsm2 w) strings
 
+--Exercise 3: (aa*b*b + ba*b*a)*
+ex3 = toRE "aa*.b*.b.ba*.b*.a.+*"
+m3  = re2fsm ex3
+fsm3 = FSM {
+  states = [0..3],
+  start = 0,
+  finals = [3],
+  delta = [(0, 'a', 1), (0, 'b', 2), 
+           (1, 'a', 1), (1, 'b', 3), 
+		   (2, 'b', 2), (2, 'a', 3),
+		   (3, 'a', 3), (3, 'b', 3)]
+  }
 
+test3 = all (\w ->accept1 m3 w == accept2 fsm3 w) strings
 ---- Recursive definitions of predicates on RE
 
 -- is_letter c r == True iff the language accepted by r is exactly the letter c
