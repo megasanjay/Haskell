@@ -35,7 +35,7 @@ toRE w = toRE' w [] where
 -- splits xs = list of all possible splits of xs, in order. For example,
 -- splits "abc" = [("","abc"), ("a","bc"), ("ab","c"), ("abc","")]
 splits :: [a] -> [([a], [a])]
-splits xs = undefined
+splits xs = [(take x xs, drop x xs) | x <- [0..(length xs)]]
 
 
 -- Algorithm 1, using splits
@@ -84,7 +84,9 @@ test = null [(r,w) | r<-[ab,ttla,ena,bb1], w<-strings, match1 r w /= match2 r w]
 
 -- Timing experiments with match1 vs match2 here. Include the results
 -- of your tests in comments. Be careful about Haskell's laziness!
-
+--time1 = do
+  --putStrLn "Starting"
+  --time1' $ Time'' `seq`
 
 
 -- Timing experiments between the winner of match1 and match2 vs acceptance
