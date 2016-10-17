@@ -343,7 +343,7 @@ fsm6 = FSM {
 		   (4, 'a', 4), (4, 'b', 4)]
   }
 
-test5 = all (\w ->accept1 m5 w == accept2 fsm5 w) strings
+test6 = all (\w ->accept1 m6 w == accept2 fsm6 w) strings
 ---- Recursive definitions of predicates on RE
 
 -- is_letter c r == True iff the language accepted by r is exactly the letter c
