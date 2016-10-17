@@ -40,13 +40,13 @@ splits xs = [(take x xs, drop x xs) | x <- [0..(length xs)]]
 
 -- Algorithm 1, using splits
 match1 :: RE -> [Char] -> Bool
-match1 Empty w = undefined
-match1 (Letter c) w = undefined
+match1 Empty w = False
+match1 (Letter c) w = 
 match1 (Union r1 r2) w = undefined
 match1 (Cat r1 r2) w = undefined
 match1 (Star r) w = undefined
 
-                    
+
 -- Algorithm 2, using continuations
 match2 :: RE -> [Char] -> Bool
 match2 r w = matchc r w null where
@@ -72,7 +72,7 @@ ab   = toRE "aa.bb.+*"            -- every letter is duplicated
 ttla = toRE "ab+*a.ab+.ab+."      -- third to last letter is a
 ena  = toRE "b*a.b*.a.*b*."       -- even number of a's
 bb1  = toRE "aba.+*b.b.aab.+*."   -- contains bb exactly once
-                    
+
 -- Consistency check 1: test each of these regexs against each string using
 -- both match1 and match2. This test should be true, but it doesn't mean
 -- the implementations are correct, only that they agree with each other!

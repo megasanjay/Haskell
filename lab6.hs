@@ -270,7 +270,6 @@ test1 = all (\w -> accept1 m1 w == accept1 fsm1 w) strings
 
 -- Replace this comment with Exercises 2-7, as above
 
---Exercise 2: ( ( (aa)* + (aba)* + (baa)* + (baba*) + (abab)* ) b* )*
 --Exercise 2: b*(ab*ab*)*
 ex2 = toRE "b*ab*.ab*..*."
 m2  = re2fsm ex2
@@ -291,16 +290,16 @@ fsm3 = FSM {
   states = [0..3],
   start = 0,
   finals = [3],
-  delta = [(0, 'a', 1), (0, 'b', 2), 
-           (1, 'a', 1), (1, 'b', 3), 
-		   (2, 'b', 2), (2, 'a', 3),
-		   (3, 'a', 3), (3, 'b', 3)]
+  delta = [(0, 'a', 1), (0, 'b', 2),
+           (1, 'a', 1), (1, 'b', 3),
+           (2, 'b', 2), (2, 'a', 3),
+           (3, 'a', 3), (3, 'b', 3)]
   }
 
 test3 = all (\w ->accept1 m3 w == accept2 fsm3 w) strings
 
---Exercise 4
-ex4 = undefined
+--Exercise 4 (a + ba + bba)*(b + bb +1)
+ex4 = toRE "aba.+bb.a.+*bbb.+1+."
 m4 = re2fsm ex4
 fsm4 = FSM {
   states = [0..3],
@@ -308,14 +307,14 @@ fsm4 = FSM {
   finals = [0, 1, 2],
   delta = [(0, 'a', 0), (0, 'b', 1),
            (1, 'a', 0), (1, 'b', 2),
-		   (2, 'a', 0), (2, 'b', 3),
-		   (3, 'a', 3), (3, 'b', 3)]
+           (2, 'a', 0), (2, 'b', 3),
+           (3, 'a', 3), (3, 'b', 3)]
   }
-  
+
 test4 = all (\w ->accept1 m4 w == accept2 fsm4 w) strings
-  
---Exercise 5
-ex5 = undefined
+
+--Exercise 5 (a*bb*ba*)*
+ex5 = toRE "a*b.b*.b.a*.*"
 m5 = re2fsm ex5
 fsm5 = FSM {
   states = [0..3],
@@ -323,24 +322,24 @@ fsm5 = FSM {
   finals = [0, 1, 2],
   delta = [(0, 'a', 1), (0, 'b', 0),
            (1, 'a', 1), (1, 'b', 2),
-		   (2, 'a', 3), (2, 'b', 0),
-		   (3, 'a', 3), (3, 'b', 3)]
+           (2, 'a', 3), (2, 'b', 0),
+           (3, 'a', 3), (3, 'b', 3)]
   }
 
 test5 = all (\w ->accept1 m5 w == accept2 fsm5 w) strings
 
---Exercise 6
-ex6 = undefined
+--Exercise 6 (b+0)((ab)+(aabb))*(a+0)
+ex6 = toRE "b0+ab.aa.b.b.+*.a0+."
 m6 = re2fsm ex6
 fsm6 = FSM {
   states = [0..4],
   start = 0,
   finals = [4],
-  delta = [(0, 'a', 1), (0, 'b', 0),
-           (1, 'a', 2), (1, 'b', 0),
-		   (2, 'a', 2), (2, 'b', 3),
-		   (3, 'a', 0), (3, 'b', 4),
-		   (4, 'a', 4), (4, 'b', 4)]
+  delta = [(0, 'a', 0), (0, 'b', 1),
+           (1, 'a', 1), (1, 'b', 2),
+           (2, 'a', 3), (2, 'b', 2),
+           (3, 'a', 4), (3, 'b', 2),
+           (4, 'a', 4), (4, 'b', 4)]
   }
 
 test6 = all (\w ->accept1 m6 w == accept2 fsm6 w) strings
@@ -354,9 +353,9 @@ fsm7 = FSM {
   finals = [0, 2, 4],
   delta = [(0, 'a', 1), (0, 'b', 3),
            (1, 'a', 2), (1, 'b', 3),
-		   (2, 'a', 1), (2, 'b', 4),
-		   (3, 'a', 1), (3, 'b', 4),
-		   (4, 'a', 2), (4, 'b', 3)]
+           (2, 'a', 1), (2, 'b', 4),
+           (3, 'a', 1), (3, 'b', 4),
+           (4, 'a', 2), (4, 'b', 3)]
   }
 
 test7 = all (\w ->accept1 m7 w == accept2 fsm7 w) strings
@@ -364,8 +363,9 @@ test7 = all (\w ->accept1 m7 w == accept2 fsm7 w) strings
 
 -- is_letter c r == True iff the language accepted by r is exactly the letter c
 -- i.e., iff [[r]] = [[c]]
+-- USe helper functions to check each state? Can't compare languages...
 is_letter :: Char -> RE -> Bool
-is_letter = undefined
+is_letter c r = ((letterFSM c) = (re2fsm r))
 
 -- uses_only cs r == True iff all strings matching r use only the letters in cs
 -- i.e., iff [[r]] subset cs*
