@@ -298,6 +298,52 @@ fsm3 = FSM {
   }
 
 test3 = all (\w ->accept1 m3 w == accept2 fsm3 w) strings
+
+--Exercise 4
+ex4 = undefined
+m4 = re2fsm ex4
+fsm4 = FSM {
+  states = [0..3],
+  start = 0,
+  finals = [0, 1, 2],
+  delta = [(0, 'a', 0), (0, 'b', 1),
+           (1, 'a', 0), (1, 'b', 2),
+		   (2, 'a', 0), (2, 'b', 3),
+		   (3, 'a', 3), (3, 'b', 3)]
+  }
+  
+test4 = all (\w ->accept1 m4 w == accept2 fsm4 w) strings
+  
+--Exercise 5
+ex5 = undefined
+m5 = re2fsm ex5
+fsm5 = FSM {
+  states = [0..3],
+  start = 0,
+  finals = [0, 1, 2],
+  delta = [(0, 'a', 1), (0, 'b', 0),
+           (1, 'a', 1), (1, 'b', 2),
+		   (2, 'a', 3), (2, 'b', 0),
+		   (3, 'a', 3), (3, 'b', 3)]
+  }
+
+test5 = all (\w ->accept1 m5 w == accept2 fsm5 w) strings
+
+--Exercise 6
+ex6 = undefined
+m6 = re2fsm ex6
+fsm6 = FSM {
+  states = [0..4],
+  start = 0,
+  finals = [4],
+  delta = [(0, 'a', 1), (0, 'b', 0),
+           (1, 'a', 2), (1, 'b', 0),
+		   (2, 'a', 2), (2, 'b', 3),
+		   (3, 'a', 0), (3, 'b', 4),
+		   (4, 'a', 4), (4, 'b', 4)]
+  }
+
+test5 = all (\w ->accept1 m5 w == accept2 fsm5 w) strings
 ---- Recursive definitions of predicates on RE
 
 -- is_letter c r == True iff the language accepted by r is exactly the letter c
