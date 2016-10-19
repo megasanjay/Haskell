@@ -22,7 +22,7 @@ deriving instance Show (RegExp a)
 type FSM a = ([a], a, [a], [(a, Char, a)])
 
 
----------------- Solution to Lab 3, ported to FSM a ------------------------
+---------------- Solution to Lab 4, ported to FSM a ------------------------
   
 -- no_dups xs = "xs has no duplicates"
 no_dups :: Eq a => [a] -> Bool
@@ -108,60 +108,72 @@ overlap [] ys = False
 overlap (x:xs) ys = elem x ys || overlap xs ys
 
 
----------------- Lab 5 begins here -----------------------------------------
+---------------- Lab 4 begins here -----------------------------------------
+
+powerlist :: [a] -> [[a]]
+powerlist xs = [] : ne_powerlist xs where
+  ne_powerlist [] = []
+  ne_powerlist (x:xs) = let ys = ne_powerlist xs in [x] : map (x:) ys ++ ys
 
 -- Machine that accepts the empty language
 emptyFSM :: FSM Int
-emptyFSM = ([0..1], 0, [0], [(i, a, d i a) | i <- [0..1], a <- sigma]) where
-  d i a = 1
+emptyFSM = ([0], 0, [], [(0,a,0) | a <- sigma])
 
 -- Machine that accepts the language {"a"} where a in sigma
 letterFSM :: Char -> FSM Int
-letterFSM a = ([0..2], 0, [1], [(i, b, d i b) | i <- [0..2], b <- sigma]) where
-  d 0 c = if c == a then 1 else 2
-  d _ b = 2
-
---accepted_states :: [Char] -> Int ->[(Int, Char, Int)]
---accepted_states w i = [(i-i, last w, i] ++ accepted_states (init w) length (init w)
+letterFSM x = ([0..2], 0, [1], [(i, a, d i a) | i <- [0..2], a <- sigma]) where
+                  d 0 x = 1
+                  d _ _ = 2
 
 -- Machine that accepts the language {w} where w in sigma*
 stringFSM :: [Char] -> FSM Int
-stringFSM w = ([1..(length w)+2], 1, [length w + 1], [(i, a, d i a) | i <- [1..(length w)+2], a <- sigma]) where         
-        d i a = if i < length w + 1&& a == (w!!(i-1)) then i+1 
-                else (length w) + 2 
+stringFSM w = ([0..n+1], 0, [n], [(i, a, d i a) | i <- [0..n+1], a <- sigma]) where
+                  n = length w
+                  d i a = if i >= n || w !! i /= a then n+1 else i+1
 
 -- Machine that accepts the union of the languages accepted by m1 and m2
 unionFSM :: (Eq a, Eq b) => FSM a -> FSM b -> FSM (a, b)
 unionFSM (qs1, s1, fs1, d1) (qs2, s2, fs2, d2) = (qs, s, fs, d) where
   qs = qs1 >< qs2
-  s  = (s1,s2)
-  fs = [(a,b) | (a,b) <- qs, elem a fs1 || elem b fs2]
-  d  = [((qm1,qm2),c,(dm1, dm2)) | (qm1,c,dm1)<-d1, (qm2, c', dm2)<- d2, c == c']
+  s  = (s1, s2)
+  fs = [(q1,q2) | q1 <- qs1, q1 `elem` fs1, q2 <- qs2, q2 `elem` fs2]
+--fs = [q | q <- qs, (fst q) `elem` fs1 || (snd q) `elem` fs2]
+  d  = [(q, a, step q a) | q <- qs, a <- sigma]
+  step (q1, q2) a = (ap d1 q1 a, ap d2 q2 a)
 
 -- Machine that accepts the concatenation of the languages accepted by m1 and m2
 catFSM :: (Eq a, Ord b) => FSM a -> FSM b -> FSM (a, [b])
 catFSM (qs1, s1, fs1, d1) (qs2, s2, fs2, d2) = (qs, s, fs, d) where
-  qs = undefined
-  s  = undefined
-  fs = undefined
-  d  = undefined
+  qs = qs1 >< powerlist qs2
+--qs = [(q1, b) | q1 <- qs1, b <- powerlist qs2, q1 `notElem` fs1 || s2 `elem` b]  
+  s  = (s1, [s2 | s1 `elem` fs1])
+--s  = (s1, if s1 `elem` fs1 then [s2] else [])
+  fs = [q | q <- qs, overlap (snd q) fs2]
+  d  = [(q, a, step q a) | q <- qs, a <- sigma]
+  step (q1, b) a = (q1', b') where
+    q1' = ap d1 q1 a
+    b' = norm $ [s2 | q1' `elem` fs1] ++ map (\q2 -> ap d2 q2 a) b
 
 -- Machine that accepts the Kleene star of the language accepted by m1
 starFSM :: Ord a => FSM a -> FSM [a]
 starFSM (qs1, s1, fs1, d1) = (qs, s, fs, d) where
-  qs = undefined
-  s  = undefined
-  fs = undefined
-  d  = undefined
+  qs = powerlist qs1
+--qs = [b | b <- powerlist qs1, not (overlap b fs1) || s1 `elem` b]  
+  s  = []
+  fs = [b | b <- qs, null b || overlap b fs1]
+  d  = [(q, a, step q a) | q <- qs, a <- sigma]
+  step [] a = norm $ [s1 | q `elem` fs1] ++ [q] where q = ap d1 s1 a
+  step b a = norm $ [s1 | overlap b' fs1] ++ b' where
+    b' = map (\q -> ap d1 q a) b
 
 
 -- Convert a regular expression to a finite state machine
 reg2fsm :: RegExp a -> FSM a
-reg2fsm Empty = undefined
-reg2fsm (Letter c) = undefined
-reg2fsm (Plus r1 r2) = undefined
-reg2fsm (Cat r1 r2) = undefined
-reg2fsm (Star r) = undefined
+reg2fsm Empty = emptyFSM
+reg2fsm (Letter c) = letterFSM c
+reg2fsm (Plus r1 r2) = unionFSM (reg2fsm r1) (reg2fsm r2)
+reg2fsm (Cat r1 r2) = catFSM (reg2fsm r1) (reg2fsm r2)
+reg2fsm (Star r) = starFSM (reg2fsm r)
 
 
 
