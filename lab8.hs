@@ -41,9 +41,9 @@ splits xs = [(take x xs, drop x xs) | x <- [0..(length xs)]]
 -- Algorithm 1, using splits
 match1 :: RE -> [Char] -> Bool
 match1 Empty w = False
-match1 (Letter c) w = 
-match1 (Union r1 r2) w = undefined
-match1 (Cat r1 r2) w = undefined
+match1 (Letter c) w = ((length w) == 1)  && (and[x == c| x <- w])
+match1 (Union r1 r2) w = (match1 r1 w) || (match1 r2 w)
+match1 (Cat r1 r2) w = or [(match1 r1 w1) && (match2 r2 w2) | (w1, w2) <- splits w]
 match1 (Star r) w = undefined
 
 
@@ -52,8 +52,8 @@ match2 :: RE -> [Char] -> Bool
 match2 r w = matchc r w null where
   -- matchc r w k == True iff w = w1*w2, r matches w1, and k w2 == True
   matchc :: RE -> [Char] -> ([Char] -> Bool) -> Bool
-  matchc Empty w k = undefined
-  matchc (Letter c) ws k = undefined
+  matchc Empty w k = True
+  matchc (Letter c) w k = k w
   matchc (Union r1 r2) w k = undefined
   matchc (Cat r1 r2) w k = undefined
   matchc r@(Star r1) w k = undefined

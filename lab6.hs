@@ -5,7 +5,6 @@ import Data.Set (Set, (\\))
 import qualified Data.Set as Set
 import Control.Monad (replicateM)
 
-
 ---------------- Some helper functions for lists and sets -------------------
 
 -- Normalize a list, i.e., sort and remove (now adjacent) duplicates.
@@ -39,7 +38,6 @@ powerlist xs = [] : ne_powerlist xs where
 -- Fixed alphabet, but everything below should work for any sigma!
 sigma = "ab"
 
-
 -- Regular expressions
 data RE = Empty | Letter Char | Plus RE RE | Cat RE RE | Star RE
 
@@ -65,7 +63,6 @@ toRE w = toRE' w [] where
   toRE' ('*':xs) (r:rs) = toRE' xs (Star r:rs)
   toRE' ('@':xs) rs = toRE' xs (Empty:rs)
   toRE' (x:xs) rs = toRE' xs (Letter x:rs)
-
 
 -- Finite state machines (as records), indexed by the type of their states
 -- M = FSM {states=qs, start=s, finals=fs, delta=d}
@@ -248,8 +245,6 @@ re2fsm (Star r) = reachable $ starFSM (re2fsm r)
 -- All strings over sigma of length 10 or less
 strings = concat $ [replicateM i sigma | i <- [0..10]]
 
-
-
 ---- Lab 6 begins here ------------------------------------------------------
 
 -- Exercise 1: (abb+b)*
@@ -283,8 +278,8 @@ fsm2 = FSM {
   }
 test2 = all (\w -> accept1 m2 w == accept1 fsm2 w) strings
 
---Exercise 3: (aa*b*b + ba*b*a)*
-ex3 = toRE "aa*.b*.b.ba*.b*.a.+*"
+--Exercise 3: ((a+b)*a(a+b)*b(a+b)*) + ((a+b)*b(a+b)*a(a+b)*)
+ex3 = toRE "ab+*a.ab+*.b.ab+*.ab+*b.ab+*.a.ab+*.+"
 m3  = re2fsm ex3
 fsm3 = FSM {
   states = [0..3],
@@ -298,8 +293,8 @@ fsm3 = FSM {
 
 test3 = all (\w ->accept1 m3 w == accept2 fsm3 w) strings
 
---Exercise 4 (a + ba + bba)*(b + bb +1)
-ex4 = toRE "aba.+bb.a.+*bbb.+1+."
+--Exercise 4 (a+aba+abba)*
+ex4 = toRE "aab.a.+ab.b.a.+*"
 m4 = re2fsm ex4
 fsm4 = FSM {
   states = [0..3],
@@ -344,8 +339,8 @@ fsm6 = FSM {
 
 test6 = all (\w ->accept1 m6 w == accept2 fsm6 w) strings
 
---Exercise 7 : ((b*a + ba*)* + (ab* + a*b)*)*
-ex7 = toRE "b*a.ba*.+*ab*.a*b.+*+*"
+--Exercise 7 : (aa + bb + abab + baba + a(bb)*a + b(aa)*b)*
+ex7 = toRE "aa.bb.+ab.a.b.+ba.b.a.+abb.*.a.+baa.*.b.+*"
 m7 = re2fsm ex7
 fsm7 = FSM {
   states = [0..4],
@@ -361,13 +356,26 @@ fsm7 = FSM {
 test7 = all (\w ->accept1 m7 w == accept2 fsm7 w) strings
 ---- Recursive definitions of predicates on RE
 
+state_check :: Char -> RE -> Bool
+state_check c r = (states (letterFSM c)) == (states (re2fsm r))
+
+start_check :: Char -> RE -> Bool
+start_check c r = (start (letterFSM c)) == (start (re2fsm r))
+
+finals_check :: Char -> RE -> Bool
+finals_check c r = (finals (letterFSM c)) == (finals (re2fsm r))
+
+delta_check :: Char -> RE -> Bool
+delta_check c r = (delta (letterFSM c)) == (delta (re2fsm r))
+
 -- is_letter c r == True iff the language accepted by r is exactly the letter c
 -- i.e., iff [[r]] = [[c]]
 -- USe helper functions to check each state? Can't compare languages...
 is_letter :: Char -> RE -> Bool
-is_letter c r = ((letterFSM c) = (re2fsm r))
+is_letter c r = state_check c r && start_check c r && finals_check c r && delta_check c r
 
 -- uses_only cs r == True iff all strings matching r use only the letters in cs
 -- i.e., iff [[r]] subset cs*
 uses_only :: [Char] -> RE -> Bool
-uses_only  = undefined
+uses_only cs r = undefined
+--uses_only cs r = [ x `elem` cs | x <- (toRE r), isAlpha x]
