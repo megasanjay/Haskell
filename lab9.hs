@@ -24,6 +24,16 @@ toRE w = toRE' w [] where
   toRE' ('@':xs) rs = toRE' xs (Empty:rs)
   toRE' (x:xs) rs = toRE' xs (Letter x:rs)
 
+--DELETE
+instance Show a => Show (FSM a) where
+  show m = "("   ++ show (states m) ++
+           ", "  ++ show (start m)  ++
+           ", "  ++ show (finals m) ++
+           ", [" ++ steps (delta m) ++ "])" where
+    steps [] = []
+    steps [t] = step t
+    steps (t:ts) = step t ++ "," ++ steps ts
+    step (q,c,q') = show q ++ "/" ++ [c] ++ ">" ++ show q'
 
 -- Finite state machines (as records), indexed by the type of their states
 -- M = FSM {states=qs, start=s, finals=fs, delta=d}
@@ -47,11 +57,31 @@ byp (Star r) = True
 
 -- [[reverseRE r]] = rev([[r]]), defined by recursion on r
 reverseRE :: RE -> RE
-reverseRE = undefined
+reverseRE Empty = Empty
+reverseRE (Letter c) = (Letter c)
+reverseRE (Union r1 r2) = Union (reverseRE r1) (reverseRE r2)
+reverseRE (Cat r1 r2) = Cat (reverseRE r1)(reverseRE r2)
+reverseRE (Star r) = Star (reverseRE r)
+
+--Test machine DELETE
+fsm3 = FSM {
+  states = [0..2],
+  start  = 0,
+  finals = [2],
+  delta  = [(0, 'a', 1), (0, 'b', 0),
+            (1, 'a', 2), (1, 'b', 1),
+            (2, 'a', 1), (2, 'b', 2)]
+  }
+
 
 -- L(complementFSM M) = Sigma^* - L(M)
 complementFSM :: Ord a => FSM a -> FSM a
-complementFSM = undefined
+complementFSM m = FSM {
+                    states = (states m),
+                    start = (start m),
+                    finals = [x |x <- (states m), (x `elem` (finals m)) == False ],
+                    delta = (delta m)
+                    }
 
 -- L(intersectFSM m1 m2) = L(m1) intersect L(m2)
 intersectFSM :: (Ord a, Ord b) => FSM a -> FSM b -> FSM (a,b)
