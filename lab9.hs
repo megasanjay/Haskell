@@ -72,6 +72,17 @@ fsm3 = FSM {
             (1, 'a', 2), (1, 'b', 1),
             (2, 'a', 1), (2, 'b', 2)]
   }
+  
+fsm1 = FSM {
+  states = [0..4],
+  start  = 0,
+  finals = [3],
+  delta  = [(0, 'a', 1), (0, 'b', 3),
+            (1, 'a', 2), (1, 'b', 4),
+            (2, 'a', 0), (2, 'b', 0),
+            (3, 'a', 4), (3, 'b', 2),
+            (4, 'a', 4), (4, 'b', 4)]
+  }
 
 
 -- L(complementFSM M) = Sigma^* - L(M)
@@ -85,11 +96,17 @@ complementFSM m = FSM {
 
 -- L(intersectFSM m1 m2) = L(m1) intersect L(m2)
 intersectFSM :: (Ord a, Ord b) => FSM a -> FSM b -> FSM (a,b)
-intersectFSM = undefined
-
+intersectFSM m1 m2 = FSM {
+                       states = [(q1, q2) | q1 <- (states m1), q2 <- (states m2)],
+					   start = (start m1, start m2),
+					   finals = [(f1, f2) | f1 <- (finals m1), f2 <- (finals m2)],
+					   delta = [((qm1, qm2), c, (dm1, dm2)) | (qm1, c, dm1)<-(delta m1), (qm2, c', dm2)<- (delta m2), c == c']
+					   }		   
+					   
 -- [[himage r h]] = h^*([[r]]), defined by recursion on r
 himage :: RE -> (Char -> [Char]) -> RE
-himage = undefined
+himage Empty h = Empty
+himage (Letter c) h = undefined
 
 -- L(hinvimage m h) = (h^*)^{-1}(L(m))
 hinvimage :: Ord a => FSM a -> (Char -> [Char]) -> FSM a
@@ -97,8 +114,9 @@ hinvimage = undefined
 
 -- L(rightq m a) = L(m)/{a} = { w | wa in L(m) }
 rightq :: Ord a => FSM a -> Char -> FSM a
-rightq = undefined
+rightq m a = undefined
 
--- [[leftq r a]] = {a}\[[r]] = { w | aw in [[r]] }, defined by recursion on r
+-- [[leftq r a]] = {a}\[[r]] = { w | aw in [[r]] }, defined by recursion on r 
+-- CREATE A DIRECT CONVERSION
 leftq :: RE -> Char -> RE
 leftq = undefined
