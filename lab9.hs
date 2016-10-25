@@ -60,7 +60,7 @@ reverseRE :: RE -> RE
 reverseRE Empty = Empty
 reverseRE (Letter c) = (Letter c)
 reverseRE (Union r1 r2) = Union (reverseRE r1) (reverseRE r2)
-reverseRE (Cat r1 r2) = Cat (reverseRE r1)(reverseRE r2)
+reverseRE (Cat r1 r2) = Cat (reverseRE r2)(reverseRE r1)
 reverseRE (Star r) = Star (reverseRE r)
 
 --Test machine DELETE
@@ -72,7 +72,7 @@ fsm3 = FSM {
             (1, 'a', 2), (1, 'b', 1),
             (2, 'a', 1), (2, 'b', 2)]
   }
-  
+
 fsm1 = FSM {
   states = [0..4],
   start  = 0,
@@ -98,25 +98,37 @@ complementFSM m = FSM {
 intersectFSM :: (Ord a, Ord b) => FSM a -> FSM b -> FSM (a,b)
 intersectFSM m1 m2 = FSM {
                        states = [(q1, q2) | q1 <- (states m1), q2 <- (states m2)],
-					   start = (start m1, start m2),
-					   finals = [(f1, f2) | f1 <- (finals m1), f2 <- (finals m2)],
-					   delta = [((qm1, qm2), c, (dm1, dm2)) | (qm1, c, dm1)<-(delta m1), (qm2, c', dm2)<- (delta m2), c == c']
-					   }		   
-					   
+                       start = (start m1, start m2),
+                       finals = [(f1, f2) | f1 <- (finals m1), f2 <- (finals m2)],
+                       delta = [((qm1, qm2), c, (dm1, dm2)) | (qm1, c, dm1)<-(delta m1), (qm2, c', dm2)<- (delta m2), c == c']
+                       }
+h :: Char -> [Char]
+h 'a' = "ab.b."
+h 'b' = "ba."
+
 -- [[himage r h]] = h^*([[r]]), defined by recursion on r
 himage :: RE -> (Char -> [Char]) -> RE
-himage Empty h = Empty
-himage (Letter c) h = undefined
+himage Empty _ = Empty
+himage (Letter c) h = toRE (h c)
+himage (Union r1 r2) h = Union (himage r1 h) (himage r2 h)
+himage (Cat r1 r2) h = Cat (himage r1 h) (himage r2 h)
+himage (Star r) h = Star (himage r h)
 
+sigma  = "ab"
 -- L(hinvimage m h) = (h^*)^{-1}(L(m))
 hinvimage :: Ord a => FSM a -> (Char -> [Char]) -> FSM a
-hinvimage = undefined
+hinvimage m h = FSM {
+                  states = states m,
+                  start  = start m,
+                  finals  = finals m,
+                  delta = [(q, a, delta_star(q, (h a))) | q <- (states m), a <- sigma, elem (q' ,a',  _) delta m, q == q', a == a']
+                  }
 
 -- L(rightq m a) = L(m)/{a} = { w | wa in L(m) }
 rightq :: Ord a => FSM a -> Char -> FSM a
 rightq m a = undefined
 
--- [[leftq r a]] = {a}\[[r]] = { w | aw in [[r]] }, defined by recursion on r 
+-- [[leftq r a]] = {a}\[[r]] = { w | aw in [[r]] }, defined by recursion on r
 -- CREATE A DIRECT CONVERSION
 leftq :: RE -> Char -> RE
 leftq = undefined
