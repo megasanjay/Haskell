@@ -126,7 +126,12 @@ hinvimage m h = FSM {
 
 -- L(rightq m a) = L(m)/{a} = { w | wa in L(m) }
 rightq :: Ord a => FSM a -> Char -> FSM a
-rightq m a = undefined
+rightq m a= FSM {
+    states = states m,
+    start = start m,
+    finals = [q | q<-states m, elem (delta_star m q [a]) (finals m)],
+    delta = delta m
+    }
 
 -- [[leftq r a]] = {a}\[[r]] = { w | aw in [[r]] }, defined by recursion on r
 -- CREATE A DIRECT CONVERSION
