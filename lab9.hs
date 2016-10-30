@@ -1,4 +1,8 @@
 -- Lab 9: REG closure under other operations
+import Data.List (nub, sort)
+import Data.Set (Set, (\\))
+import qualified Data.Set as Set
+import Control.Monad (replicateM)
 
 data RE = Empty | Letter Char | Union RE RE | Cat RE RE | Star RE
 instance (Show RE) where    -- use precedence to minimize parentheses
@@ -35,6 +39,17 @@ instance Show a => Show (FSM a) where
     steps (t:ts) = step t ++ "," ++ steps ts
     step (q,c,q') = show q ++ "/" ++ [c] ++ ">" ++ show q'
 
+ap :: Eq a => [(a,Char,a)] -> a -> Char -> a
+ap ((q1, a1, q2):ts) q a | q1 == q && a1 == a = q2
+                         | otherwise = ap ts q a
+
+-- Two definitions of acceptance of a string by an FSM
+delta_1 :: Eq a => FSM a -> a -> Char -> a
+delta_1 = ap . delta
+
+delta_star :: Eq a => FSM a -> a -> [Char] -> a
+delta_star = foldl . delta_1
+
 -- Finite state machines (as records), indexed by the type of their states
 -- M = FSM {states=qs, start=s, finals=fs, delta=d}
 data FSM a = FSM {
@@ -64,14 +79,14 @@ reverseRE (Cat r1 r2) = Cat (reverseRE r2)(reverseRE r1)
 reverseRE (Star r) = Star (reverseRE r)
 
 --Test machine DELETE
-fsm3 = FSM {
-  states = [0..2],
+even_as :: FSM Int
+even_as = FSM {
+  states = [0,1],
   start  = 0,
-  finals = [2],
-  delta  = [(0, 'a', 1), (0, 'b', 0),
-            (1, 'a', 2), (1, 'b', 1),
-            (2, 'a', 1), (2, 'b', 2)]
-  }
+  finals = [0],
+  delta  = [(i, a, d i a) | i <- [0,1], a <- sigma]
+  } where d i 'a' = (i + 1) `mod` 2
+          d i c   = i
 
 fsm1 = FSM {
   states = [0..4],
@@ -103,8 +118,8 @@ intersectFSM m1 m2 = FSM {
                        delta = [((qm1, qm2), c, (dm1, dm2)) | (qm1, c, dm1)<-(delta m1), (qm2, c', dm2)<- (delta m2), c == c']
                        }
 h :: Char -> [Char]
-h 'a' = "ab.b."
-h 'b' = "ba."
+h 'a' = "aa."
+h 'b' = "ba.a."
 
 -- [[himage r h]] = h^*([[r]]), defined by recursion on r
 himage :: RE -> (Char -> [Char]) -> RE
@@ -121,12 +136,18 @@ hinvimage m h = FSM {
                   states = states m,
                   start  = start m,
                   finals  = finals m,
-                  delta = [(q, a, delta_star(q, (h a))) | q <- (states m), a <- sigma, elem (q' ,a',  _) delta m, q == q', a == a']
+                  delta = [(q, a, (delta_star m (start m) [x | x <- (h a), elem x sigma])) | q <- (states m), a <- sigma]
                   }
 
 -- L(rightq m a) = L(m)/{a} = { w | wa in L(m) }
 rightq :: Ord a => FSM a -> Char -> FSM a
-rightq m a = undefined
+rightq m a = FSM{
+               states = states m,
+               start  = start m,
+               finals = [delta_star m (start m) [a] | (delta_star m (start m) [a]) `elem` (finals m)],
+               --finals = [q |w <- a , (delta_star m (start m) w) elem (finals m)],
+               delta = delta m
+               }
 
 -- [[leftq r a]] = {a}\[[r]] = { w | aw in [[r]] }, defined by recursion on r
 -- CREATE A DIRECT CONVERSION
