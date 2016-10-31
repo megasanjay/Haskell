@@ -50,6 +50,9 @@ delta_1 = ap . delta
 delta_star :: Eq a => FSM a -> a -> [Char] -> a
 delta_star = foldl . delta_1
 
+accept1 :: Eq a => FSM a -> [Char] -> Bool
+accept1 m w = elem (delta_star m (start m) w) (finals m)
+
 -- Finite state machines (as records), indexed by the type of their states
 -- M = FSM {states=qs, start=s, finals=fs, delta=d}
 data FSM a = FSM {
@@ -88,18 +91,6 @@ even_as = FSM {
   } where d i 'a' = (i + 1) `mod` 2
           d i c   = i
 
-fsm1 = FSM {
-  states = [0..4],
-  start  = 0,
-  finals = [3],
-  delta  = [(0, 'a', 1), (0, 'b', 3),
-            (1, 'a', 2), (1, 'b', 4),
-            (2, 'a', 0), (2, 'b', 0),
-            (3, 'a', 4), (3, 'b', 2),
-            (4, 'a', 4), (4, 'b', 4)]
-  }
-
-
 -- L(complementFSM M) = Sigma^* - L(M)
 complementFSM :: Ord a => FSM a -> FSM a
 complementFSM m = FSM {
@@ -118,8 +109,8 @@ intersectFSM m1 m2 = FSM {
                        delta = [((qm1, qm2), c, (dm1, dm2)) | (qm1, c, dm1)<-(delta m1), (qm2, c', dm2)<- (delta m2), c == c']
                        }
 h :: Char -> [Char]
-h 'a' = "aa."
-h 'b' = "ba.a."
+h 'a' = "ab.b"
+h 'b' = "ba.b."
 
 -- [[himage r h]] = h^*([[r]]), defined by recursion on r
 himage :: RE -> (Char -> [Char]) -> RE
@@ -130,6 +121,7 @@ himage (Cat r1 r2) h = Cat (himage r1 h) (himage r2 h)
 himage (Star r) h = Star (himage r h)
 
 sigma  = "ab"
+
 -- L(hinvimage m h) = (h^*)^{-1}(L(m))
 hinvimage :: Ord a => FSM a -> (Char -> [Char]) -> FSM a
 hinvimage m h = FSM {
@@ -145,11 +137,14 @@ rightq m a = FSM{
                states = states m,
                start  = start m,
                finals = [delta_star m (start m) [a] | (delta_star m (start m) [a]) `elem` (finals m)],
-               --finals = [q |w <- a , (delta_star m (start m) w) elem (finals m)],
                delta = delta m
                }
 
 -- [[leftq r a]] = {a}\[[r]] = { w | aw in [[r]] }, defined by recursion on r
 -- CREATE A DIRECT CONVERSION
 leftq :: RE -> Char -> RE
-leftq = undefined
+leftq Empty a = Empty
+leftq (Letter c) a = if a == c then (Star Empty) else Empty
+leftq (Union r1 r2) a = Union (leftq r1 a) (leftq r2 a)
+leftq (Cat r1 r2) a = if byp r1 then Union (Cat r1 r2 ) (leftq r2 a) else Cat (leftq r1 a) (r2)
+leftq (Star r) a = Star r
