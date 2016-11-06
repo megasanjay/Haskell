@@ -39,11 +39,20 @@ instance Show a => Show (FSM a) where
     steps (t:ts) = step t ++ "," ++ steps ts
     step (q,c,q') = show q ++ "/" ++ [c] ++ ">" ++ show q'
 
+even_as :: FSM Int
+even_as = FSM {
+  states = [0,1],
+  start  = 0,
+  finals = [0],
+  delta  = [(i, a, d i a) | i <- [0,1], a <- sigma]
+  } where d i 'a' = (i + 1) `mod` 2
+          d i c   = i
 
 -- ap ts q a == the unique q' such that (q, a, q') is in ts;  assumes success
 ap :: Eq a => [(a,Char,a)] -> a -> Char -> a
 ap ((q1, a1, q2):ts) q a | q1 == q && a1 == a = q2
                          | otherwise = ap ts q a
+
 
 
 ---- Lab 10 begins here -----------------------------------------------------
@@ -58,14 +67,15 @@ data NFSM a = NFSM {
 
 -- nap ts q a == the normalized list of q' such that (q, a, q') is in ts
 nap :: Ord a => [(a,Char,a)] -> a -> Char -> [a]
-nap ts q a = undefined
+nap ts q a = norm [ q' | (q1, a1, q') <- ts, q == q1, a == a1]
 
 -- ndelta_star m q w == normalized list of states m goes to from q on w
 ndelta_star :: Ord a => NFSM a -> a -> [Char] -> [a]
-ndelta_star m q w = undefined
+ndelta_star m q "" = [q]
+ndelta_star m q (a:w) = concat $ norm[ndelta_star m dq w | dq <- (nap (ndelta m) q a)]
 
 naccept :: Ord a => NFSM a -> [Char] -> Bool
-naccept m w = undefined
+naccept m w = or [ elem x (nfinals m) | q <- (nstarts m), x<-(ndelta_star m q w)]
 
 
 ----------------------------------------------------------------
@@ -78,6 +88,13 @@ data EFSM a = EFSM {
   epsilon :: [(a,a)]
   }
 
+efsm1 = EFSM {
+  estates = [0..7],
+  estarts = [0],
+  efinals = [2],
+  edelta = [(0,'a', 1),(3,'b', 4),(5,'b', 6),(6,'a', 7)],
+  epsilon =[(1,2),(2,3),(2,5),(4,2),(7,2)]
+}
 
 -- Normalized epsilon closure of a set of states
 -- (Hint: look at reachable below)
