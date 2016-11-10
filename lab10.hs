@@ -99,16 +99,39 @@ efsm1 = EFSM {
 -- Normalized epsilon closure of a set of states
 -- (Hint: look at reachable below)
 eclose :: Ord a => EFSM a -> [a] -> [a]
-eclose m qs = undefined
+eclose m qs = sort $ stable $ iterate close (qs, [])
+              stable ((fr,qs):rest) = if null qs then fr else stable rest
+              -- in close (fr, xs), fr (frontier) and xs (current closure) are disjoint
+              close (fr, xs) = (fr', xs') where
+                xs' = fr ++ xs
+                fr' = norm $ filter (`notElem` xs') (concatMap step fr)
+                step q = norm [q' | (q, q')<-epsilon m, elem q fr']
 
 
 -- edelta_star m q w == eclosed list of states m goes to from q on w
 edelta_star :: Ord a => EFSM a -> a -> [Char] -> [a]
-edelta_star m q w = undefined
+edelta_star m q "" = [q]
+edelta_star m q (a:w) = eclose m (concat [edelta_star m x w | x <- eclose m (nap edelta m) q w]))
 
 eaccept :: Ord a => EFSM a -> [Char] -> Bool
-eaccept m w = undefined
+eaccept m w = overlap  (efinals m) (concat $ norm [edelta_star m x w | x <- (estarts m)])
 
+eap :: Eq a => [(a,a)] -> a -> [a]
+eap e q = [q] ++ [ [e2] ++ (eap e e2) | (e1, e2) <- e , e1 == q ]
+--eap ((q1, q2):qs) q = [eap  | q1 == q]
+
+ereachable :: Ord a => EFSM a -> EFSM a
+ereachable (EFSM {estates=qs, estarts=s, efinals=fs, edelta=d, epsilon=e}) =
+   EFSM {estates=qs', estarts=s, efinals=fs', edelta=d', epsilon=e} where
+     qs' = sort $ stable $ iterate close (s, [])
+     fs' = filter (`elem` qs') fs
+     d'  = filter (\(q,_,_) -> q `elem` qs') d
+     stable ((fr,qs):rest) = if null qs then fr else stable rest
+     -- in close (fr, xs), fr (frontier) and xs (current closure) are disjoint
+     close (fr, xs) = (fr', xs') where
+       xs' = fr ++ xs
+       fr' = norm $ filter (`notElem` xs') (concatMap step fr)
+       step q = eap e q
 
 ----------------------------------------------------------------
 -- Machine conversions
@@ -125,12 +148,22 @@ fsm_to_nfsm m = NFSM {
 
 -- Conversion from NFSM to FSM by the "subset construction"
 nfsm_to_fsm :: Ord a => NFSM a -> FSM [a]
-nfsm_to_fsm m = undefined
+nfsm_to_fsm m = FSM {
+    states = subsequences (nstates m),
+    start = nstarts m,
+    finals = [f | f<-states (nfsm_to_fsm m), overlap (nfinals m) f]
+    delta = norm $ head [[(q, c, ndelta_star m q' [a])| a <-sigma, q<-(states (nfsm_to_fsm m))]| q<-(states (nfsm_to_fsm m))]
+}
 
 
 -- Similar conversion from EFSM to FSM using epsilon closure
 efsm_to_fsm :: Ord a => EFSM a -> FSM [a]
-efsm_to_fsm m = undefined
+efsm_to_fsm m = FSM {
+    states = norm (subsequences (nstates m)),
+    start = [s | s<-(eclose m (estarts m))],
+    finals = [f | f<-states (efsm_to_fsm m), overlap (efinals m) f]
+    delta = norm $ head [[(q, c, ndelta_star m q' [a])| a <-sigma, q<-(states (efsm_to_fsm m))]| q<-(states (efsm_to_fsm m))]
+}
 
 
 {- Tests:
@@ -145,6 +178,7 @@ efsm_to_fsm m = undefined
 ---- Lab 10 ends here ----------------------------------------------------
 
 -- reachable m == the part of m that is reachable from the start state
+
 reachable :: Ord a => FSM a -> FSM a
 reachable (FSM {states=qs, start=s, finals=fs, delta=d}) =
   FSM {states=qs', start=s, finals=fs', delta=d'} where
